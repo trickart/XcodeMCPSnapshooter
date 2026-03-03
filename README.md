@@ -19,6 +19,24 @@ A CLI tool that captures SwiftUI preview snapshots by connecting to Xcode's MCP 
 
 ## Installation
 
+### Homebrew tap
+
+```bash
+brew install trickart/tap/xmsnap
+```
+
+### [nest](https://github.com/mtj0928/nest)
+
+```bash
+nest install trickart/XcodeMCPSnapshooter
+```
+
+### [mint](https://github.com/yonaskolb/Mint)
+
+```bash
+mint install trickart/XcodeMCPSnapshooter
+```
+
 ### Build from source
 
 ```bash
