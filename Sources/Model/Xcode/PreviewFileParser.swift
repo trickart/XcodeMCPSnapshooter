@@ -23,6 +23,9 @@ public enum PreviewFileParser {
         }
 
         let parsed = try JSONDecoder().decode(GrepResponse.self, from: data)
+        if parsed.matchCount == 0 {
+            return []
+        }
         return parsed.results
     }
 }
@@ -31,6 +34,7 @@ public enum PreviewFileParser {
 
 extension PreviewFileParser {
     struct GrepResponse: Decodable {
+        var matchCount: Int
         var results: [String]
     }
 }

@@ -37,7 +37,7 @@ struct PreviewFileParserTests {
     @Test("Returns empty array for zero matches")
     func parseEmptyResults() throws {
         let json = """
-        {"matchCount":0,"results":[],"searchPath":"","truncated":false}
+        {"matchCount":0,"results":["No matches found"],"searchPath":"","truncated":false}
         """
         let result = MCPToolCallResult(content: [.text(json)])
 
