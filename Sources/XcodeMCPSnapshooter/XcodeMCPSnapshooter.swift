@@ -21,6 +21,9 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
     @Flag(name: [.short, .long], help: "List preview files only without capturing snapshots")
     var list: Bool = false
 
+    @Argument(help: "File name patterns to filter preview files (e.g., ContentView.swift Views/)")
+    var fileFilters: [String] = []
+
     func run() async throws {
         let serverPath = "/usr/bin/xcrun"
         let transport = StdioTransport(serverPath: serverPath, arguments: ["mcpbridge"])
@@ -65,8 +68,14 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             // Find preview files
             let service = SnapshotService(client: client, renderTimeout: renderTimeout)
             let previewFiles = try await service.findPreviewFiles(tabIdentifier: tabIdentifier)
+            let targetFiles = filterFiles(previewFiles, by: fileFilters)
 
-            if previewFiles.isEmpty {
+            if !fileFilters.isEmpty {
+                print("\nFilter patterns: \(fileFilters.joined(separator: ", "))")
+                print("Matched \(targetFiles.count) of \(previewFiles.count) preview file(s).")
+            }
+
+            if targetFiles.isEmpty {
                 print("\nNo preview files found in the project.")
                 await client.disconnect()
                 return
@@ -74,8 +83,8 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
 
             // If --list flag, show file list and stop
             if list {
-                print("\nFound \(previewFiles.count) preview file(s):")
-                for file in previewFiles {
+                print("\nFound \(targetFiles.count) preview file(s):")
+                for file in targetFiles {
                     print("  - \(file)")
                 }
                 await client.disconnect()
@@ -89,7 +98,7 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
 
             let results = await service.captureAllSnapshots(
                 tabIdentifier: tabIdentifier,
-                filePaths: previewFiles,
+                filePaths: targetFiles,
                 outputDirectory: outputDir,
                 progress: { current, total, filePath in
                     let text = "  [\(current)/\(total)] Rendering \(filePath)..."
@@ -131,6 +140,15 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
         } catch {
             await client.disconnect()
             throw error
+        }
+    }
+
+    private func filterFiles(_ files: [String], by patterns: [String]) -> [String] {
+        guard !patterns.isEmpty else { return files }
+        return files.filter { filePath in
+            patterns.contains { pattern in
+                filePath.localizedCaseInsensitiveContains(pattern)
+            }
         }
     }
 }
