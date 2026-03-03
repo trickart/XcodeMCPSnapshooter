@@ -1,6 +1,6 @@
 # xmsnap
 
-A CLI tool that captures SwiftUI preview snapshots by connecting to Xcode's MCP server via JSON-RPC 2.0 over stdio.
+A CLI tool that captures SwiftUI preview snapshots by connecting to [Xcode's MCP](https://developer.apple.com/documentation/xcode/giving-agentic-coding-tools-access-to-xcode) server via JSON-RPC 2.0 over stdio.
 
 ## Features
 
