@@ -1,0 +1,13 @@
+{
+  "name": "RunAllTests",
+  "description": "Runs all tests from the active scheme's active test plan",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

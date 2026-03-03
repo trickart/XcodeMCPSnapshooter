@@ -1,0 +1,30 @@
+{
+  "name": "XcodeMV",
+  "description": "Moves or renames files and directories in the project navigator with support for filesystem operations.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "sourcePath": {
+        "description": "Project navigator relative path of the source item to move/rename",
+        "type": "string"
+      },
+      "destinationPath": {
+        "description": "Project navigator relative path for the destination (for move) or new name (for rename)",
+        "type": "string"
+      },
+      "operation": {
+        "description": "The type of move operation to perform",
+        "enum": ["move", "copy"],
+        "type": "string"
+      },
+      "overwriteExisting": {
+        "description": "Whether to overwrite existing files at the destination",
+        "type": "boolean"
+      }
+    },
+    "required": ["tabIdentifier", "sourcePath", "destinationPath"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "XcodeRefreshCodeIssuesInFile",
+  "description": "Retrieves current compiler diagnostics (errors, warnings, notes) for a file in the Xcode project. Returns formatted diagnostic information including severity levels and messages.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "filePath": {
+        "description": "The path to the file within the Xcode project organization (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier", "filePath"]
+  }
+}

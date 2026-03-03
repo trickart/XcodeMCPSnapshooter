@@ -1,0 +1,25 @@
+{
+  "name": "XcodeListNavigatorIssues",
+  "description": "Lists the currently known issues shown Xcode's Issue Navigator UI in the workspace. These issues include those that have been discovered since the last build, and also issues like package resolution problems and workspace configuration issues.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "severity": {
+        "description": "Limit the returned issues to those that have the specified severity or higher. Valid values: 'error', 'warning', 'remark'. Defaults to 'error'.",
+        "type": "string"
+      },
+      "pattern": {
+        "description": "Regex to filter the returned issues. Will match against the 'message' field.",
+        "type": "string"
+      },
+      "glob": {
+        "description": "Glob to filter the returned issues. Will match against the 'path' field.",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

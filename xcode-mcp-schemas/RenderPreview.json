@@ -1,0 +1,25 @@
+{
+  "name": "RenderPreview",
+  "description": "Builds and renders a Preview and waits until a snapshot of the resulting UI is available.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "sourceFilePath": {
+        "description": "The path to the file within the Xcode project organization (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      },
+      "previewDefinitionIndexInFile": {
+        "description": "The zero based index of the #Preview macro or PreviewProvider struct definition in the source file counting from the top. Defaults to 0.",
+        "type": "integer"
+      },
+      "timeout": {
+        "description": "The time in seconds to wait for the rendering of the preview to complete. Defaults to 120 seconds.",
+        "type": "integer"
+      }
+    },
+    "required": ["tabIdentifier", "sourceFilePath"]
+  }
+}

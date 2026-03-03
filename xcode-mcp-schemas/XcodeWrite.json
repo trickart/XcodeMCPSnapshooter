@@ -1,0 +1,21 @@
+{
+  "name": "XcodeWrite",
+  "description": "Creates or overwrites files with content in the Xcode project. Works on Xcode project structure paths, not filesystem paths. Automatically adds new files to the project structure. Both filePath and content parameters are required.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier (required)",
+        "type": "string"
+      },
+      "filePath": {
+        "description": "REQUIRED: The path to the file within the Xcode project organization (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      },
+      "content": {
+        "description": "REQUIRED: The content to write to the file",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier", "filePath", "content"]
+  }
+}

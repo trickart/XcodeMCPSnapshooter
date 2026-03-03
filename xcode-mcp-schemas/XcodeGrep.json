@@ -1,0 +1,62 @@
+{
+  "name": "XcodeGrep",
+  "description": "Searches for text patterns in files within the Xcode project structure using regex. Works on Xcode project organization, not filesystem structure. CRITICAL: Must include a 'pattern' argument - this tool will fail without it.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "pattern": {
+        "description": "Text to search for using regex. REQUIRED.",
+        "type": "string"
+      },
+      "path": {
+        "description": "Where to search - file or directory in project (defaults to root)",
+        "type": "string"
+      },
+      "glob": {
+        "description": "Only search files matching this pattern",
+        "type": "string"
+      },
+      "type": {
+        "description": "Shortcut for common file types (swift, js, py, etc.)",
+        "type": "string"
+      },
+      "ignoreCase": {
+        "description": "Ignore case when matching",
+        "type": "boolean"
+      },
+      "multiline": {
+        "description": "Allow patterns to span multiple lines",
+        "type": "boolean"
+      },
+      "outputMode": {
+        "description": "What to return: content, filesWithMatches, or count (default: filesWithMatches)",
+        "enum": ["content", "filesWithMatches", "count"],
+        "type": "string"
+      },
+      "showLineNumbers": {
+        "description": "Show line numbers with results (content mode only)",
+        "type": "boolean"
+      },
+      "linesBefore": {
+        "description": "Show N lines before each match for context",
+        "type": "integer"
+      },
+      "linesAfter": {
+        "description": "Show N lines after each match for context",
+        "type": "integer"
+      },
+      "linesContext": {
+        "description": "Show N lines both before and after each match",
+        "type": "integer"
+      },
+      "headLimit": {
+        "description": "Stop after N results",
+        "type": "integer"
+      }
+    },
+    "required": ["tabIdentifier", "pattern"]
+  }
+}

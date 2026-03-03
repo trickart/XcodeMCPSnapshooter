@@ -1,0 +1,8 @@
+{
+  "name": "XcodeListWindows",
+  "description": "Lists the current Xcode windows and their workspace information",
+  "parameters": {
+    "properties": {},
+    "required": []
+  }
+}

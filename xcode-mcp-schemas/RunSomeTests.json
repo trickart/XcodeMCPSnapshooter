@@ -1,0 +1,31 @@
+{
+  "name": "RunSomeTests",
+  "description": "Runs specific tests using the active scheme's active test plan",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "tests": {
+        "description": "Array of test specifiers to run. Each specifier contains 'targetName' and 'testIdentifier' fields.",
+        "items": {
+          "properties": {
+            "targetName": {
+              "description": "The test target name",
+              "type": "string"
+            },
+            "testIdentifier": {
+              "description": "Test identifier in XCTestIdentifier format",
+              "type": "string"
+            }
+          },
+          "required": ["targetName", "testIdentifier"],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "required": ["tabIdentifier", "tests"]
+  }
+}

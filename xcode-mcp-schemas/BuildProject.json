@@ -1,0 +1,13 @@
+{
+  "name": "BuildProject",
+  "description": "Builds an Xcode project and waits until the build completes.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

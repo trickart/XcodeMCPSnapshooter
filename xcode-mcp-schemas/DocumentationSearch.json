@@ -1,0 +1,20 @@
+{
+  "name": "DocumentationSearch",
+  "description": "Searches Apple Developer Documentation using semantic matching.",
+  "parameters": {
+    "properties": {
+      "query": {
+        "description": "The search query",
+        "type": "string"
+      },
+      "frameworks": {
+        "description": "Framework(s) to search in. Searches all frameworks if not specified.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": ["query"]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "GetTestList",
+  "description": "Gets all available tests from the active scheme's active test plan. Results are limited to 100 tests. The complete list is written to fullTestListPath in grep-friendly format.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

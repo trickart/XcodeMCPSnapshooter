@@ -1,0 +1,25 @@
+{
+  "name": "XcodeRM",
+  "description": "Removes files and directories from the Xcode project structure and optionally deletes the underlying files from the filesystem.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "path": {
+        "description": "The project path to remove (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      },
+      "recursive": {
+        "description": "Remove directories and their contents recursively",
+        "type": "boolean"
+      },
+      "deleteFiles": {
+        "description": "Also move the underlying files to Trash (defaults to true)",
+        "type": "boolean"
+      }
+    },
+    "required": ["tabIdentifier", "path"]
+  }
+}

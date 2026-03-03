@@ -1,0 +1,25 @@
+{
+  "name": "XcodeRead",
+  "description": "Reads the contents of a file within the Xcode project organization. Returns content in cat -n format with line numbers. Supports reading up to 600 lines by default with optional offset and limit parameters for large files.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "filePath": {
+        "description": "The path to the file within the Xcode project organization (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      },
+      "offset": {
+        "description": "The line number to start reading from (only provide if the file is too large to read at once)",
+        "type": "integer"
+      },
+      "limit": {
+        "description": "The number of lines to read (only provide if the file is too large to read at once)",
+        "type": "integer"
+      }
+    },
+    "required": ["tabIdentifier", "filePath"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "XcodeMakeDir",
+  "description": "Creates directories and groups in the Xcode project structure.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "directoryPath": {
+        "description": "Project navigator relative path for the directory to create",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier", "directoryPath"]
+  }
+}

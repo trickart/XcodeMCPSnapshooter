@@ -1,0 +1,21 @@
+{
+  "name": "XcodeGlob",
+  "description": "Finds files in the Xcode project structure matching wildcard patterns. Works on Xcode project organization, not filesystem structure. Example patterns: '*.swift', '**/*.json', 'src/**/*.{swift,m}'. If no pattern is provided, defaults to '**/*' (all files).",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "pattern": {
+        "description": "File matching pattern using wildcards (* ** ? [abc] {swift,m}). Examples: '*.swift', '**/*.json', 'src/**/*.{swift,m}'. Defaults to '**/*' if not provided.",
+        "type": "string"
+      },
+      "path": {
+        "description": "Which project directory to search in (optional, defaults to root)",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

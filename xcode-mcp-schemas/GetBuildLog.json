@@ -1,0 +1,26 @@
+{
+  "name": "GetBuildLog",
+  "description": "Gets the log of the current or most recently finished build. You can choose which build log entries to include by specifying the severity of any issues emitted by the build task represented by the entry. You can also filter by message regex pattern or file glob pattern. The response also indicates whether the build is currently in progress.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "severity": {
+        "description": "Limit the output of build log entries to those that emitted issues of the specified severity or higher. Valid values: 'error', 'warning', 'remark'. Defaults to 'error'.",
+        "enum": ["remark", "warning", "error"],
+        "type": "string"
+      },
+      "pattern": {
+        "description": "Regex to filter the returned build log entries.",
+        "type": "string"
+      },
+      "glob": {
+        "description": "Glob to filter the returned build log entries.",
+        "type": "string"
+      }
+    },
+    "required": ["tabIdentifier"]
+  }
+}

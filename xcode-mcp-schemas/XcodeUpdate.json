@@ -1,0 +1,29 @@
+{
+  "name": "XcodeUpdate",
+  "description": "Edits files in the Xcode project by replacing text content. Works on Xcode project structure paths, not filesystem paths. IMPORTANT: The tool will fail if filePath, oldString, or newString parameters are missing.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "filePath": {
+        "description": "REQUIRED: The path to the file to modify within the Xcode project organization (e.g., 'ProjectName/Sources/MyFile.swift')",
+        "type": "string"
+      },
+      "oldString": {
+        "description": "REQUIRED: The text to replace",
+        "type": "string"
+      },
+      "newString": {
+        "description": "REQUIRED: The text to replace it with, must be different from oldString",
+        "type": "string"
+      },
+      "replaceAll": {
+        "description": "Replace all occurrences of oldString (default false)",
+        "type": "boolean"
+      }
+    },
+    "required": ["tabIdentifier", "filePath", "oldString", "newString"]
+  }
+}

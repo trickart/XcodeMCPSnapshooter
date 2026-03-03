@@ -1,0 +1,28 @@
+{
+  "name": "XcodeLS",
+  "description": "Lists files and directories in the Xcode project structure at the specified path. Works on Xcode project organization, not filesystem structure.",
+  "parameters": {
+    "properties": {
+      "tabIdentifier": {
+        "description": "The workspace tab identifier",
+        "type": "string"
+      },
+      "path": {
+        "description": "The project path to browse (e.g., 'ProjectName/Sources/')",
+        "type": "string"
+      },
+      "recursive": {
+        "description": "Recursively list all files (truncated to 100 lines). Default: true",
+        "type": "boolean"
+      },
+      "ignore": {
+        "description": "Skip files/folders matching these patterns",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    "required": ["tabIdentifier", "path"]
+  }
+}
