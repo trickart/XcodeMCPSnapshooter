@@ -2,6 +2,8 @@ import ArgumentParser
 import Foundation
 import Model
 
+extension OutputFormat: ExpressibleByArgument {}
+
 @main
 struct XcodeMCPSnapshooter: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -24,6 +26,9 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
     @Option(name: .long, parsing: .upToNextOption,
             help: "Patterns to exclude preview files (e.g., --exclude Tests/ --exclude Generated)")
     var exclude: [String] = []
+
+    @Option(name: .long, help: "Output format: default, json, markdown, html")
+    var format: OutputFormat = .default
 
     @Flag(name: .long, help: "Suppress progress and informational messages")
     var quiet: Bool = false
@@ -148,29 +153,24 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             )
 
             // Print summary
-            let succeeded = results.filter { if case .success = $0.result { return true } else { return false } }
-            let failed = results.filter { if case .failure = $0.result { return true } else { return false } }
-
+            let formatted = SnapshotFormatter.format(
+                results: results,
+                outputDirectory: outputDir,
+                format: format
+            )
             if !quiet { print() }
-            print("Snapshot Summary:")
-            print("  Total:     \(results.count)")
-            print("  Succeeded: \(succeeded.count)")
-            print("  Failed:    \(failed.count)")
 
-            for result in succeeded {
-                if case .success(let path) = result.result {
-                    print("  OK: \(result.sourceFilePath) -> \(path)")
-                }
-            }
-
-            for result in failed {
-                if case .failure(let error) = result.result {
-                    print("  FAIL: \(result.sourceFilePath) - \(error)")
-                }
-            }
-
-            if !succeeded.isEmpty {
-                log("\nSnapshots saved to: \(outputDir)")
+            switch format {
+            case .html:
+                let path = (outputDir as NSString).appendingPathComponent("index.html")
+                try formatted.write(toFile: path, atomically: true, encoding: .utf8)
+                print(path)
+            case .markdown:
+                let path = (outputDir as NSString).appendingPathComponent("index.md")
+                try formatted.write(toFile: path, atomically: true, encoding: .utf8)
+                print(path)
+            case .default, .json:
+                print(formatted)
             }
 
             await client.disconnect()
