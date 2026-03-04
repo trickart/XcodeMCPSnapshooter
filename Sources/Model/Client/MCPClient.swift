@@ -22,6 +22,7 @@ public actor MCPClient {
     private var nextRequestID: Int = 1
     private var pendingRequests: [Int: CheckedContinuation<JSONRPCResponse, Error>] = [:]
     private var bufferedResponses: [Int: JSONRPCResponse] = [:]
+    private var cancelledRequests: Set<Int> = []
     private var receiveTask: Task<Void, Never>?
 
     public init(
@@ -112,7 +113,11 @@ public actor MCPClient {
     }
 
     /// Call a tool
-    public func callTool(name: String, arguments: [String: JSONValue]? = nil) async throws -> MCPToolCallResult {
+    public func callTool(
+        name: String,
+        arguments: [String: JSONValue]? = nil,
+        timeout: Duration? = nil
+    ) async throws -> MCPToolCallResult {
         guard state == .ready else {
             throw MCPClientError.notConnected
         }
@@ -125,7 +130,7 @@ public actor MCPClient {
             return p
         }()
 
-        let response = try await sendRequest(method: "tools/call", params: params)
+        let response = try await sendRequest(method: "tools/call", params: params, timeout: timeout)
 
         guard let result = response.result else {
             if let error = response.error {
@@ -160,7 +165,8 @@ public actor MCPClient {
 
     private func sendRequest(
         method: String,
-        params: [String: JSONValue]? = nil
+        params: [String: JSONValue]? = nil,
+        timeout: Duration? = nil
     ) async throws -> JSONRPCResponse {
         let id = nextRequestID
         nextRequestID += 1
@@ -170,16 +176,22 @@ public actor MCPClient {
 
         try await transport.send(data)
 
+        let effectiveTimeout = timeout ?? self.requestTimeout
+
         // Wait for response with timeout
         return try await withThrowingTaskGroup(of: JSONRPCResponse.self) { group in
             group.addTask {
-                try await withCheckedThrowingContinuation { continuation in
-                    Task { await self.registerPending(id: id, continuation: continuation) }
+                try await withTaskCancellationHandler {
+                    try await withCheckedThrowingContinuation { continuation in
+                        Task { await self.registerPending(id: id, continuation: continuation) }
+                    }
+                } onCancel: {
+                    Task { await self.cancelPending(id: id) }
                 }
             }
 
             group.addTask {
-                try await Task.sleep(for: self.requestTimeout)
+                try await Task.sleep(for: effectiveTimeout)
                 throw MCPClientError.timeout
             }
 
@@ -190,11 +202,23 @@ public actor MCPClient {
     }
 
     private func registerPending(id: Int, continuation: CheckedContinuation<JSONRPCResponse, Error>) {
+        // If the request was already cancelled before the continuation was registered
+        if cancelledRequests.remove(id) != nil {
+            continuation.resume(throwing: CancellationError())
         // If the response arrived before the continuation was registered, return it from the buffer
-        if let response = bufferedResponses.removeValue(forKey: id) {
+        } else if let response = bufferedResponses.removeValue(forKey: id) {
             continuation.resume(returning: response)
         } else {
             pendingRequests[id] = continuation
+        }
+    }
+
+    private func cancelPending(id: Int) {
+        if let continuation = pendingRequests.removeValue(forKey: id) {
+            continuation.resume(throwing: CancellationError())
+        } else {
+            // Mark as cancelled so registerPending can handle it if called later
+            cancelledRequests.insert(id)
         }
     }
 

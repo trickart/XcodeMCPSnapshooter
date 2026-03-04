@@ -95,6 +95,44 @@ struct MCPClientTests {
         await client.disconnect()
     }
 
+    @Test("Custom timeout on callTool fires before default timeout")
+    func callToolCustomTimeout() async throws {
+        let transport = MockTransport()
+
+        transport.onSend = { data in
+            guard let request = try? JSONDecoder().decode(JSONRPCRequest.self, from: data) else {
+                return
+            }
+
+            if request.method == "initialize" {
+                let initResult = MCPInitializeResult(
+                    protocolVersion: "2024-11-05",
+                    capabilities: MCPServerCapabilities(),
+                    serverInfo: MCPServerInfo(name: "test-server", version: "1.0.0")
+                )
+                let resultData = try! JSONEncoder().encode(initResult)
+                let resultValue = try! JSONDecoder().decode(JSONValue.self, from: resultData)
+                let response = JSONRPCResponse(id: request.id, result: resultValue)
+                try! transport.injectResponse(response)
+            }
+            // Do NOT respond to tools/call — let it time out
+        }
+
+        let client = MCPClient(transport: transport, requestTimeout: .seconds(60))
+        try await client.connect()
+
+        let start = ContinuousClock.now
+        await #expect(throws: MCPClientError.self) {
+            try await client.callTool(name: "SlowTool", timeout: .milliseconds(500))
+        }
+        let elapsed = ContinuousClock.now - start
+
+        // Should time out in ~0.5s, not 60s
+        #expect(elapsed < .seconds(5))
+
+        await client.disconnect()
+    }
+
     @Test("Tool call succeeds")
     func callTool() async throws {
         let transport = MockTransport()
