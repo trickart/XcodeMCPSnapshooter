@@ -25,6 +25,9 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             help: "Patterns to exclude preview files (e.g., --exclude Tests/ --exclude Generated)")
     var exclude: [String] = []
 
+    @Flag(name: .long, help: "Suppress progress and informational messages")
+    var quiet: Bool = false
+
     @Argument(help: "File name patterns to filter preview files (e.g., ContentView.swift Views/)")
     var fileFilters: [String] = []
 
@@ -33,22 +36,22 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
         let transport = StdioTransport(serverPath: serverPath, arguments: ["mcpbridge"])
         let client = MCPClient(transport: transport)
 
-        print("Connecting to MCP server...")
+        log("Connecting to MCP server...")
 
         do {
             try await client.connect()
 
             let info = await client.serverInfo
             if let info {
-                print("Connected to: \(info.name) v\(info.version)")
+                log("Connected to: \(info.name) v\(info.version)")
             }
 
-            print("Xcode may show a permission dialog. Please click \"Allow\" to continue.")
+            log("Xcode may show a permission dialog. Please click \"Allow\" to continue.")
 
             // Call XcodeListWindows with extended timeout for permission dialog
             let result: MCPToolCallResult
             do {
-                result = try await withProgressReporting(interval: .seconds(5)) {
+                result = try await withProgressReporting(interval: .seconds(5), quiet: quiet) {
                     try await client.callTool(
                         name: "XcodeListWindows",
                         timeout: .seconds(30)
@@ -73,16 +76,16 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             // Match against open Xcode projects
             let matched = try ProjectDiscovery.matchProject(path: resolvedPath, in: projects)
 
-            print("\nSelected Project:")
-            print("  Name: \(matched.name)")
-            print("  Path: \(matched.workspacePath)")
+            log("\nSelected Project:")
+            log("  Name: \(matched.name)")
+            log("  Path: \(matched.workspacePath)")
 
             guard let tabIdentifier = matched.tabIdentifiers.first else {
-                print("Error: No tab identifier available for the project.")
+                log("Error: No tab identifier available for the project.")
                 await client.disconnect()
                 return
             }
-            print("  Tab:  \(tabIdentifier)")
+            log("  Tab:  \(tabIdentifier)")
 
             // Find preview targets (files + preview indices)
             let service = SnapshotService(client: client, renderTimeout: renderTimeout)
@@ -94,16 +97,16 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
                 let allFiles = Set(allTargets.map(\.filePath))
                 let matchedFiles = Set(targets.map(\.filePath))
                 if !fileFilters.isEmpty {
-                    print("\nInclude patterns: \(fileFilters.joined(separator: ", "))")
+                    log("\nInclude patterns: \(fileFilters.joined(separator: ", "))")
                 }
                 if !exclude.isEmpty {
-                    print("\nExclude patterns: \(exclude.joined(separator: ", "))")
+                    log("\nExclude patterns: \(exclude.joined(separator: ", "))")
                 }
-                print("Matched \(matchedFiles.count) of \(allFiles.count) preview file(s) (\(targets.count) preview(s)).")
+                log("Matched \(matchedFiles.count) of \(allFiles.count) preview file(s) (\(targets.count) preview(s)).")
             }
 
             if targets.isEmpty {
-                print("\nNo preview files found in the project.")
+                log("\nNo preview files found in the project.")
                 await client.disconnect()
                 return
             }
@@ -112,7 +115,8 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             if list {
                 let grouped = Dictionary(grouping: targets, by: \.filePath)
                 let uniqueFiles = grouped.keys.sorted()
-                print("\nFound \(targets.count) preview(s) in \(uniqueFiles.count) file(s):")
+                if !quiet { print() }
+                print("Found \(targets.count) preview(s) in \(uniqueFiles.count) file(s):")
                 for file in uniqueFiles {
                     let count = grouped[file]!.count
                     if count > 1 {
@@ -122,13 +126,13 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
                     }
                 }
                 await client.disconnect()
-                print("\nDisconnected.")
+                log("\nDisconnected.")
                 return
             }
 
             // Capture snapshots
             let outputDir = (output as NSString).standardizingPath
-            print("\nCapturing \(targets.count) snapshot(s) to: \(outputDir)")
+            log("\nCapturing \(targets.count) snapshot(s) to: \(outputDir)")
 
             let results = await service.captureAllSnapshots(
                 tabIdentifier: tabIdentifier,
@@ -136,10 +140,9 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
                 outputDirectory: outputDir,
                 progress: { current, total, displayName in
                     let text = "  [\(current)/\(total)] Rendering \(displayName)..."
-                    print("\r\u{1B}[2K\(text)", terminator: "")
-                    fflush(stdout)
+                    self.logInline("\r\u{1B}[2K\(text)")
                     if current == total {
-                        print()  // final newline
+                        self.log("")  // final newline
                     }
                 }
             )
@@ -148,7 +151,8 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             let succeeded = results.filter { if case .success = $0.result { return true } else { return false } }
             let failed = results.filter { if case .failure = $0.result { return true } else { return false } }
 
-            print("\nSnapshot Summary:")
+            if !quiet { print() }
+            print("Snapshot Summary:")
             print("  Total:     \(results.count)")
             print("  Succeeded: \(succeeded.count)")
             print("  Failed:    \(failed.count)")
@@ -166,15 +170,25 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             }
 
             if !succeeded.isEmpty {
-                print("\nSnapshots saved to: \(outputDir)")
+                log("\nSnapshots saved to: \(outputDir)")
             }
 
             await client.disconnect()
-            print("\nDisconnected.")
+            log("\nDisconnected.")
         } catch {
             await client.disconnect()
             throw error
         }
+    }
+
+    private func log(_ message: String) {
+        guard !quiet else { return }
+        FileHandle.standardError.write(Data((message + "\n").utf8))
+    }
+
+    private func logInline(_ message: String) {
+        guard !quiet else { return }
+        FileHandle.standardError.write(Data(message.utf8))
     }
 
     private func filterTargets(_ targets: [PreviewTarget], by patterns: [String]) -> [PreviewTarget] {
@@ -216,8 +230,13 @@ enum PermissionError: Error, LocalizedError {
 /// Runs `operation` while printing progress messages at the given `interval`.
 func withProgressReporting<T: Sendable>(
     interval: Duration,
+    quiet: Bool = false,
     operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
+    guard !quiet else {
+        return try await operation()
+    }
+
     let start = ContinuousClock.now
 
     return try await withThrowingTaskGroup(of: T.self) { group in
@@ -229,8 +248,8 @@ func withProgressReporting<T: Sendable>(
             while !Task.isCancelled {
                 try await Task.sleep(for: interval)
                 let elapsed = Int((ContinuousClock.now - start) / .seconds(1))
-                print("\r\u{1B}[2K  Still waiting for Xcode response... (\(elapsed)s elapsed)", terminator: "")
-                fflush(stdout)
+                let message = "\r\u{1B}[2K  Still waiting for Xcode response... (\(elapsed)s elapsed)"
+                FileHandle.standardError.write(Data(message.utf8))
             }
             throw CancellationError()
         }
@@ -238,8 +257,7 @@ func withProgressReporting<T: Sendable>(
         let result = try await group.next()!
         group.cancelAll()
         // Clear the progress line
-        print("\r\u{1B}[2K", terminator: "")
-        fflush(stdout)
+        FileHandle.standardError.write(Data("\r\u{1B}[2K".utf8))
         return result
     }
 }
