@@ -41,8 +41,23 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
 
             print("Xcode may show a permission dialog. Please click \"Allow\" to continue.")
 
-            // Call XcodeListWindows to get the project list
-            let result = try await client.callTool(name: "XcodeListWindows")
+            // Call XcodeListWindows with extended timeout for permission dialog
+            let result: MCPToolCallResult
+            do {
+                result = try await withProgressReporting(interval: .seconds(5)) {
+                    try await client.callTool(
+                        name: "XcodeListWindows",
+                        timeout: .seconds(30)
+                    )
+                }
+            } catch let error as MCPClientError {
+                switch error {
+                case .timeout:
+                    throw PermissionError.timeout
+                default:
+                    throw error
+                }
+            }
             let projects = XcodeWindowParser.parseProjects(from: result)
 
             // Determine the target path
@@ -150,5 +165,53 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
                 filePath.localizedCaseInsensitiveContains(pattern)
             }
         }
+    }
+}
+
+// MARK: - Permission Dialog Support
+
+enum PermissionError: Error, LocalizedError {
+    case timeout
+
+    var errorDescription: String? {
+        switch self {
+        case .timeout:
+            return """
+                Timed out waiting for Xcode permission dialog response.
+                If you clicked "Don't Allow", grant access and re-run the command.
+                Otherwise, re-run and click "Allow" when the dialog appears.
+                """
+        }
+    }
+}
+
+/// Runs `operation` while printing progress messages at the given `interval`.
+func withProgressReporting<T: Sendable>(
+    interval: Duration,
+    operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    let start = ContinuousClock.now
+
+    return try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask {
+            try await operation()
+        }
+
+        group.addTask {
+            while !Task.isCancelled {
+                try await Task.sleep(for: interval)
+                let elapsed = Int((ContinuousClock.now - start) / .seconds(1))
+                print("\r\u{1B}[2K  Still waiting for Xcode response... (\(elapsed)s elapsed)", terminator: "")
+                fflush(stdout)
+            }
+            throw CancellationError()
+        }
+
+        let result = try await group.next()!
+        group.cancelAll()
+        // Clear the progress line
+        print("\r\u{1B}[2K", terminator: "")
+        fflush(stdout)
+        return result
     }
 }
