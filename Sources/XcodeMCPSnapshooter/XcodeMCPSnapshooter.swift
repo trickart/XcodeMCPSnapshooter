@@ -21,6 +21,10 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
     @Flag(name: [.short, .long], help: "List preview files only without capturing snapshots")
     var list: Bool = false
 
+    @Option(name: .long, parsing: .upToNextOption,
+            help: "Patterns to exclude preview files (e.g., --exclude Tests/ --exclude Generated)")
+    var exclude: [String] = []
+
     @Argument(help: "File name patterns to filter preview files (e.g., ContentView.swift Views/)")
     var fileFilters: [String] = []
 
@@ -83,12 +87,18 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             // Find preview targets (files + preview indices)
             let service = SnapshotService(client: client, renderTimeout: renderTimeout)
             let allTargets = try await service.findPreviewTargets(tabIdentifier: tabIdentifier)
-            let targets = filterTargets(allTargets, by: fileFilters)
+            let included = filterTargets(allTargets, by: fileFilters)
+            let targets = excludeTargets(included, by: exclude)
 
-            if !fileFilters.isEmpty {
+            if !fileFilters.isEmpty || !exclude.isEmpty {
                 let allFiles = Set(allTargets.map(\.filePath))
                 let matchedFiles = Set(targets.map(\.filePath))
-                print("\nFilter patterns: \(fileFilters.joined(separator: ", "))")
+                if !fileFilters.isEmpty {
+                    print("\nInclude patterns: \(fileFilters.joined(separator: ", "))")
+                }
+                if !exclude.isEmpty {
+                    print("\nExclude patterns: \(exclude.joined(separator: ", "))")
+                }
                 print("Matched \(matchedFiles.count) of \(allFiles.count) preview file(s) (\(targets.count) preview(s)).")
             }
 
@@ -171,6 +181,15 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
         guard !patterns.isEmpty else { return targets }
         return targets.filter { target in
             patterns.contains { pattern in
+                target.filePath.localizedCaseInsensitiveContains(pattern)
+            }
+        }
+    }
+
+    private func excludeTargets(_ targets: [PreviewTarget], by patterns: [String]) -> [PreviewTarget] {
+        guard !patterns.isEmpty else { return targets }
+        return targets.filter { target in
+            !patterns.contains { pattern in
                 target.filePath.localizedCaseInsensitiveContains(pattern)
             }
         }
