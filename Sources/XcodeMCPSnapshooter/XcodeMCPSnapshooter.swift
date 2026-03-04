@@ -33,10 +33,18 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
     @Flag(name: .long, help: "Suppress progress and informational messages")
     var quiet: Bool = false
 
+    @Flag(name: .long, help: "Show license information for this tool and its dependencies")
+    var license: Bool = false
+
     @Argument(help: "File name patterns to filter preview files (e.g., ContentView.swift Views/)")
     var fileFilters: [String] = []
 
     func run() async throws {
+        if license {
+            print(Licenses.text)
+            return
+        }
+
         let serverPath = "/usr/bin/xcrun"
         let transport = StdioTransport(serverPath: serverPath, arguments: ["mcpbridge"])
         let client = MCPClient(transport: transport)
