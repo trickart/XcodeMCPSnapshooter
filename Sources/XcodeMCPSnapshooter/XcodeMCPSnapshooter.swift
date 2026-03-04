@@ -80,17 +80,19 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
             }
             print("  Tab:  \(tabIdentifier)")
 
-            // Find preview files
+            // Find preview targets (files + preview indices)
             let service = SnapshotService(client: client, renderTimeout: renderTimeout)
-            let previewFiles = try await service.findPreviewFiles(tabIdentifier: tabIdentifier)
-            let targetFiles = filterFiles(previewFiles, by: fileFilters)
+            let allTargets = try await service.findPreviewTargets(tabIdentifier: tabIdentifier)
+            let targets = filterTargets(allTargets, by: fileFilters)
 
             if !fileFilters.isEmpty {
+                let allFiles = Set(allTargets.map(\.filePath))
+                let matchedFiles = Set(targets.map(\.filePath))
                 print("\nFilter patterns: \(fileFilters.joined(separator: ", "))")
-                print("Matched \(targetFiles.count) of \(previewFiles.count) preview file(s).")
+                print("Matched \(matchedFiles.count) of \(allFiles.count) preview file(s) (\(targets.count) preview(s)).")
             }
 
-            if targetFiles.isEmpty {
+            if targets.isEmpty {
                 print("\nNo preview files found in the project.")
                 await client.disconnect()
                 return
@@ -98,9 +100,16 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
 
             // If --list flag, show file list and stop
             if list {
-                print("\nFound \(targetFiles.count) preview file(s):")
-                for file in targetFiles {
-                    print("  - \(file)")
+                let grouped = Dictionary(grouping: targets, by: \.filePath)
+                let uniqueFiles = grouped.keys.sorted()
+                print("\nFound \(targets.count) preview(s) in \(uniqueFiles.count) file(s):")
+                for file in uniqueFiles {
+                    let count = grouped[file]!.count
+                    if count > 1 {
+                        print("  - \(file) (\(count) previews)")
+                    } else {
+                        print("  - \(file)")
+                    }
                 }
                 await client.disconnect()
                 print("\nDisconnected.")
@@ -109,14 +118,14 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
 
             // Capture snapshots
             let outputDir = (output as NSString).standardizingPath
-            print("\nCapturing snapshots to: \(outputDir)")
+            print("\nCapturing \(targets.count) snapshot(s) to: \(outputDir)")
 
             let results = await service.captureAllSnapshots(
                 tabIdentifier: tabIdentifier,
-                filePaths: targetFiles,
+                targets: targets,
                 outputDirectory: outputDir,
-                progress: { current, total, filePath in
-                    let text = "  [\(current)/\(total)] Rendering \(filePath)..."
+                progress: { current, total, displayName in
+                    let text = "  [\(current)/\(total)] Rendering \(displayName)..."
                     print("\r\u{1B}[2K\(text)", terminator: "")
                     fflush(stdout)
                     if current == total {
@@ -158,11 +167,11 @@ struct XcodeMCPSnapshooter: AsyncParsableCommand {
         }
     }
 
-    private func filterFiles(_ files: [String], by patterns: [String]) -> [String] {
-        guard !patterns.isEmpty else { return files }
-        return files.filter { filePath in
+    private func filterTargets(_ targets: [PreviewTarget], by patterns: [String]) -> [PreviewTarget] {
+        guard !patterns.isEmpty else { return targets }
+        return targets.filter { target in
             patterns.contains { pattern in
-                filePath.localizedCaseInsensitiveContains(pattern)
+                target.filePath.localizedCaseInsensitiveContains(pattern)
             }
         }
     }

@@ -67,4 +67,36 @@ struct PreviewFileParserTests {
             try PreviewFileParser.parseFilePaths(from: result)
         }
     }
+
+    // MARK: - parseMatchCount
+
+    @Test("Parses match count from XcodeGrep content mode response")
+    func parseMatchCount() throws {
+        let json = """
+        {"matchCount":3,"results":["A.swift:10:#Preview {","A.swift:30:#Preview {","A.swift:50:PreviewProvider"],"searchPath":"","truncated":false}
+        """
+        let result = MCPToolCallResult(content: [.text(json)])
+
+        let count = try PreviewFileParser.parseMatchCount(from: result)
+        #expect(count == 3)
+    }
+
+    @Test("parseMatchCount returns 0 for empty response")
+    func parseMatchCountEmpty() throws {
+        let json = """
+        {"matchCount":0,"results":[],"searchPath":"","truncated":false}
+        """
+        let result = MCPToolCallResult(content: [.text(json)])
+
+        let count = try PreviewFileParser.parseMatchCount(from: result)
+        #expect(count == 0)
+    }
+
+    @Test("parseMatchCount returns 0 for empty data")
+    func parseMatchCountEmptyData() throws {
+        let result = MCPToolCallResult(content: [])
+
+        let count = try PreviewFileParser.parseMatchCount(from: result)
+        #expect(count == 0)
+    }
 }
