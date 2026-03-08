@@ -76,11 +76,25 @@ xmsnap --list
 xmsnap ContentView.swift SettingsView.swift
 ```
 
+#### Exclude files by pattern
+
+```bash
+xmsnap --exclude Tests/ --exclude Generated
+```
+
 #### Set a custom render timeout (in seconds)
 
 ```bash
 xmsnap --render-timeout 180
 ```
+
+#### Output as HTML
+
+```bash
+xmsnap --format html
+```
+
+![summary-html](summary-html.png)
 
 ### Options
 
@@ -90,6 +104,10 @@ xmsnap --render-timeout 180
 | `--output <dir>` | `-o` | Output directory for snapshot images | `./snapshots` |
 | `--render-timeout <sec>` | | Render timeout per preview in seconds | `120` |
 | `--list` | `-l` | List preview files only, skip capturing | `false` |
+| `--exclude <pattern>...` | | Patterns to exclude preview files | (none) |
+| `--format <format>` | | Output format: `default`, `json`, `markdown`, `html` | `default` |
+| `--quiet` | | Suppress progress and informational messages | `false` |
+| `--license` | | Show license information | `false` |
 | `<file-filters>` | | File name patterns to filter previews | (all) |
 
 ### How it works
