@@ -182,7 +182,7 @@ public enum SnapshotFormatter {
         .stat.success .value { color: #34c759; }
         .stat.failure .value { color: #ff3b30; }
         .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-        .card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .card img { width: 100%; height: auto; display: block; }
         .card .info { padding: 0.75rem; font-size: 0.85rem; color: #333; word-break: break-all; }
         .error-list { margin-top: 2rem; }
@@ -192,7 +192,6 @@ public enum SnapshotFormatter {
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; cursor: pointer; justify-content: center; align-items: center; }
         .overlay.active { display: flex; }
         .overlay img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        .card img { cursor: pointer; }
         </style>
         </head>
         <body>
@@ -240,8 +239,8 @@ public enum SnapshotFormatter {
         <img id="overlay-img" src="" alt="">
         </div>
         <script>
-        document.querySelectorAll('.card img').forEach(img => {
-          img.onclick = e => { document.getElementById('overlay-img').src = img.src; document.getElementById('overlay').classList.add('active'); };
+        document.querySelectorAll('.card').forEach(card => {
+          card.onclick = e => { const img = card.querySelector('img'); if (img) { document.getElementById('overlay-img').src = img.src; document.getElementById('overlay').classList.add('active'); } };
         });
         document.onkeydown = e => { if (e.key === 'Escape') document.getElementById('overlay').classList.remove('active'); };
         </script>
