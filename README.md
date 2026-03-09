@@ -8,6 +8,9 @@ A CLI tool that captures SwiftUI preview snapshots by connecting to [Xcode's MCP
 - Renders previews through Xcode's MCP bridge and saves snapshot images
 - Supports file name pattern filtering to target specific previews
 - List mode to inspect available preview files without capturing
+- Multiple output formats: default, JSON, Markdown, and HTML gallery
+- Auto-clicks Xcode's MCP permission dialog via Accessibility API
+- `setup` subcommand to guide Accessibility permission and Xcode Intelligence configuration
 - Real-time progress display during snapshot capture
 - Universal binary (arm64 + x86_64) via GitHub Actions release workflow
 
@@ -51,6 +54,19 @@ swift build -c release
 Download the `xmsnap.artifactbundle.zip` from the [Releases](../../releases) page. The artifact bundle contains a universal macOS binary.
 
 ## Usage
+
+### Initial setup
+
+Run the `setup` subcommand to check Accessibility permission and open Xcode's Intelligence settings:
+
+```bash
+xmsnap setup
+```
+
+This will:
+
+1. Check if the terminal has Accessibility permission (required for auto-clicking MCP permission dialogs)
+2. Open Xcode > Settings > Intelligence so you can enable "Allow external agents to use Xcode tools"
 
 ### Capture all preview snapshots in the current directory's project
 
@@ -96,7 +112,7 @@ xmsnap --format html
 
 ![summary-html](summary-html.png)
 
-### Options
+### Snapshot Options
 
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
@@ -117,7 +133,7 @@ xmsnap --format html
 3. Searches for files containing `#Preview` or `PreviewProvider`
 4. Renders each preview through Xcode and copies the snapshot image to the output directory
 
-> **Note:** When running for the first time, Xcode may display a permission dialog. Click "Allow" to proceed.
+> **Note:** When running for the first time, Xcode may display a permission dialog. If Accessibility permission is granted, `xmsnap` will automatically click "Allow". Otherwise, click it manually to proceed.
 
 ## Architecture
 
@@ -128,9 +144,13 @@ Sources/
 │   ├── JSONRPC/        # JSON-RPC 2.0 message types (JSONValue, Request, Response, Notification)
 │   ├── MCP/            # MCP protocol types (initialization, tools, content)
 │   ├── Transport/      # MCPTransport protocol and StdioTransport implementation
-│   └── Xcode/          # SnapshotService, parsers, and project discovery
+│   └── Xcode/          # SnapshotService, parsers, formatters, and project discovery
 └── XcodeMCPSnapshooter/
-    └── XcodeMCPSnapshooter.swift   # CLI entry point (swift-argument-parser)
+    ├── XcodeMCPSnapshooter.swift   # CLI entry point (swift-argument-parser)
+    ├── SnapshotCommand.swift       # Snapshot subcommand (default)
+    ├── SetupCommand.swift          # Setup subcommand
+    ├── AccessibilityHelper.swift   # Accessibility API for auto-clicking permission dialogs
+    └── Licenses.swift              # License text for --license flag
 ```
 
 Key design decisions:
@@ -139,6 +159,7 @@ Key design decisions:
 - **Stateless parsers** — `XcodeWindowParser`, `PreviewFileParser`, and `RenderPreviewParser` are caseless enums with static methods
 - **Protocol-driven transport** — `MCPTransport` protocol enables easy testing with `MockTransport`
 - **Sequential rendering** — Snapshots are captured one at a time for Xcode stability
+- **Accessibility-based dialog handling** — Auto-detects and clicks Xcode's MCP permission dialog during snapshot capture
 
 ## Development
 
