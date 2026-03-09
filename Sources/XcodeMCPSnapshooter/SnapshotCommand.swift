@@ -57,12 +57,20 @@ struct Snapshot: AsyncParsableCommand {
                 log("Connected to: \(info.name) v\(info.version)")
             }
 
-            log("Xcode may show a permission dialog. Please click \"Allow\" to continue.")
+            let canAutoClick = AccessibilityHelper.isTrusted
+            if canAutoClick {
+                log("Accessibility permission granted. Will auto-click \"Allow\" if dialog appears.")
+            } else {
+                log("Xcode may show a permission dialog. Please click \"Allow\" to continue.")
+            }
 
             // Call XcodeListWindows with extended timeout for permission dialog
             let result: MCPToolCallResult
             do {
-                result = try await withProgressReporting(interval: .seconds(5), quiet: quiet) {
+                result = try await withDialogHandling(
+                    autoClick: canAutoClick,
+                    quiet: quiet
+                ) {
                     try await client.callTool(
                         name: "XcodeListWindows",
                         timeout: .seconds(30)
@@ -264,6 +272,62 @@ func withProgressReporting<T: Sendable>(
         group.cancelAll()
         // Clear the progress line
         FileHandle.standardError.write(Data("\r\u{1B}[2K".utf8))
+        return result
+    }
+}
+
+/// Runs `operation` with progress reporting and optional automatic dialog handling.
+func withDialogHandling<T: Sendable>(
+    autoClick: Bool,
+    quiet: Bool = false,
+    operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    let start = ContinuousClock.now
+
+    return try await withThrowingTaskGroup(of: T.self) { group in
+        // Task 1: the actual operation
+        group.addTask {
+            try await operation()
+        }
+
+        // Task 2: progress reporting
+        if !quiet {
+            group.addTask {
+                while !Task.isCancelled {
+                    try await Task.sleep(for: .seconds(5))
+                    let elapsed = Int((ContinuousClock.now - start) / .seconds(1))
+                    let message = "\r\u{1B}[2K  Still waiting for Xcode response... (\(elapsed)s elapsed)"
+                    FileHandle.standardError.write(Data(message.utf8))
+                }
+                throw CancellationError()
+            }
+        }
+
+        // Task 3: auto-click dialog monitoring
+        if autoClick {
+            group.addTask {
+                while !Task.isCancelled {
+                    if AccessibilityHelper.clickAllowButtonInXcode() {
+                        let message = "  Automatically clicked \"Allow\" on Xcode permission dialog.\n"
+                        FileHandle.standardError.write(Data(message.utf8))
+                        // Keep waiting until cancelled by the main task completing
+                        while !Task.isCancelled {
+                            try await Task.sleep(for: .seconds(1))
+                        }
+                        break
+                    }
+                    try await Task.sleep(for: .milliseconds(500))
+                }
+                throw CancellationError()
+            }
+        }
+
+        let result = try await group.next()!
+        group.cancelAll()
+        if !quiet {
+            // Clear the progress line
+            FileHandle.standardError.write(Data("\r\u{1B}[2K".utf8))
+        }
         return result
     }
 }
